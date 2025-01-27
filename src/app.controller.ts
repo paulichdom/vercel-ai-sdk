@@ -3,6 +3,7 @@ import { Response } from 'express';
 import { google } from '@ai-sdk/google';
 import { openai } from '@ai-sdk/openai';
 import {
+  CoreMessage,
   generateText,
   LanguageModelV1,
   pipeDataStreamToResponse,
@@ -109,5 +110,23 @@ export class AppController {
     });
 
     return text;
+  }
+
+  @Post('/get-completions')
+  async getCompletions(@Body() body) {
+    const messages: CoreMessage[] = await body.messages
+
+    const result = await generateText({
+      model: openai('gpt-4o'),
+      messages
+    })
+
+    const newMessages = result.response.messages;
+    const allMessages = [
+      ...messages,
+      ...newMessages
+    ]
+
+    return allMessages;
   }
 }
