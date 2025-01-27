@@ -1,8 +1,13 @@
-import { anthropic } from '@ai-sdk/anthropic';
-import { openai } from '@ai-sdk/openai';
-import { Body, Controller, Post, Res } from '@nestjs/common';
-import { generateText, pipeDataStreamToResponse, streamText } from 'ai';
+import { Body, Controller, Post, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
+import { google } from '@ai-sdk/google';
+import { openai } from '@ai-sdk/openai';
+import {
+  generateText,
+  LanguageModelV1,
+  pipeDataStreamToResponse,
+  streamText,
+} from 'ai';
 
 @Controller()
 export class AppController {
@@ -30,8 +35,6 @@ export class AppController {
         result.mergeIntoDataStream(dataStreamWriter);
       },
       onError: (error) => {
-        // Error messages are masked by default for security reasons.
-        // If you want to expose the error message to the client, you can do so here:
         return error instanceof Error ? error.message : String(error);
       },
     });
@@ -58,6 +61,41 @@ export class AppController {
             `You are a text summarizer. ` +
             `Summarize the text you receive. ` +
             `Be concise. ` +
+            `Return only the summary. ` +
+            `Do not use the phrase "here is a summary". ` +
+            `Highlight relevant phrases in bold. ` +
+            `The summary should be two sentences long. `,
+        },
+        {
+          role: 'user',
+          content: body.prompt,
+        },
+      ],
+    });
+
+    return text;
+  }
+
+  @Post('/model-generate-text')
+  async hotSwapModels(@Query() query, @Body() body) {
+    const models: [string, LanguageModelV1][] = [
+      ['gpt-4o', openai('gpt-4o')],
+      ['gemini-1.5-flash', google('gemini-1.5-flash')],
+    ];
+
+    const model =
+      models.find((model) => model[0] === query.model)[1] || openai('gpt-4o');
+
+    const { text } = await generateText({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content:
+            `You are a text summarizer. ` +
+            `Summarize the text you receive. ` +
+            `Be concise. ` +
+            `State which model you are using` +
             `Return only the summary. ` +
             `Do not use the phrase "here is a summary". ` +
             `Highlight relevant phrases in bold. ` +
