@@ -1,6 +1,7 @@
+import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
-import { Controller, Post, Res } from '@nestjs/common';
-import { pipeDataStreamToResponse, streamText } from 'ai';
+import { Body, Controller, Post, Res } from '@nestjs/common';
+import { generateText, pipeDataStreamToResponse, streamText } from 'ai';
 import { Response } from 'express';
 
 @Controller()
@@ -44,5 +45,15 @@ export class AppController {
     });
 
     result.pipeTextStreamToResponse(res);
+  }
+
+  @Post('/openai-generate-text')
+  async openaiGenerateText(@Body() body) {
+    const { text } = await generateText({
+      model: openai('gpt-4o'),
+      prompt: body.prompt,
+    });
+
+    return text;
   }
 }
