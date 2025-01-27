@@ -8,12 +8,12 @@ import { Response } from 'express';
 export class AppController {
   @Post('/data-stream')
   async root(@Res() res: Response) {
-    const result = streamText({
+    const textStream = streamText({
       model: openai('gpt-4o'),
       prompt: 'Invent a new holiday and describe its traditions.',
     });
 
-    result.pipeDataStreamToResponse(res);
+    textStream.pipeDataStreamToResponse(res);
   }
 
   @Post('/stream-data')
@@ -51,7 +51,23 @@ export class AppController {
   async openaiGenerateText(@Body() body) {
     const { text } = await generateText({
       model: openai('gpt-4o'),
-      prompt: body.prompt,
+      messages: [
+        {
+          role: 'system',
+          content:
+            `You are a text summarizer. ` +
+            `Summarize the text you receive. ` +
+            `Be concise. ` +
+            `Return only the summary. ` +
+            `Do not use the phrase "here is a summary". ` +
+            `Highlight relevant phrases in bold. ` +
+            `The summary should be two sentences long. `,
+        },
+        {
+          role: 'user',
+          content: body.prompt,
+        },
+      ],
     });
 
     return text;
